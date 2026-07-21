@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="block">
+    <link name="block">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>.5</mass>
+        <!-- Inertia values were calculated to be consistent with the mass and
+             geometry size, assuming a uniform density. -->
+        <inertia>
+          <ixx>0.001483</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.0108333</iyy>
+          <iyz>0</iyz>
+          <izz>0.011483</izz>
+        </inertia>
+      </inertial>
+      <visual name="block">
+        <pose>0 0 0.0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.16 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.1 0.1 0.1 0.6</diffuse>
+        </material>
+      </visual>
+      <collision name="block">
+        <pose>0 0 0.0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.5 0.16 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus> 3.0e7 </drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint> 0.02 </drake:mesh_resolution_hint>
+          <drake:hunt_crossley_dissipation>1</drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+	  <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

@@ -141,7 +141,13 @@ class TrajOptExample {
    * N.B. Derivived classes will need to access this to change the default
    * camera pose.
    */
-  std::shared_ptr<Meshcat> meshcat_ = std::make_shared<Meshcat>();
+  std::shared_ptr<drake::geometry::Meshcat> meshcat_ =
+      std::make_shared<drake::geometry::Meshcat>([] {
+        drake::geometry::MeshcatParams p;
+        p.port = 7000;
+        return p;
+      }());
+  // std::shared_ptr<Meshcat> meshcat_ = std::make_shared<Meshcat>();
 
  private:
   /**

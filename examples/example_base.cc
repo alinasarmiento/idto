@@ -79,6 +79,8 @@ void TrajOptExample::RunModelPredictiveControl(
   const int nu = plant.num_actuators();
 
   // Connect to the Meshcat visualizer
+  std::cout << "meshcat_ ptr (MPC): " << meshcat_.get() << std::endl;
+  meshcat_->Delete();
   AddDefaultVisualization(&builder, meshcat_);
 
   // Create a system model for the controller
@@ -170,6 +172,20 @@ void TrajOptExample::RunModelPredictiveControl(
   simulator.Initialize();
 
   // Run the simulation, recording the result for later playback in MeshCat
+  // fix for race condition
+  // Wait for Meshcat browser connection
+  std::cout << meshcat_->web_url() << std::endl;
+  // meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
+  //                   drake::geometry::Rgba(1,0,0,1));
+  while (meshcat_->GetNumActiveConnections() == 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  // small extra buffer
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  // Force an initial publish so geometry definitely exists
+  meshcat_->Delete();
+  diagram->ForcedPublish(simulator.get_context());
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
   meshcat_->StartRecording();
   simulator.AdvanceTo(options.sim_time);
   meshcat_->StopRecording();
@@ -345,6 +361,7 @@ void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
   CreatePlantModel(&plant);
   plant.Finalize();
 
+  std::cout << "meshcat_ ptr (playback): " << meshcat_.get() << std::endl;
   AddDefaultVisualization(&builder, meshcat_);
 
   auto diagram = builder.Build();
