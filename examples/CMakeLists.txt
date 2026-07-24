@@ -20,7 +20,26 @@ target_link_libraries(example_base
                       drake::drake
                       mpc_controller
                       yaml_config
-                      find_resource)
+                      find_resource
+		      dairlibtypes
+		      standalone_lcm_systems
+		      lcm_driven_loop)
+
+add_library(standalone_lcm_systems
+            standalone_lcm_systems.cc
+            standalone_lcm_systems.h)
+target_link_libraries(standalone_lcm_systems 
+		      drake::drake
+		      dairlibtypes)
+		    
+add_library(lcm_driven_loop INTERFACE)
+target_include_directories(lcm_driven_loop
+                           INTERFACE
+			   ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(lcm_driven_loop
+                      INTERFACE
+		      drake::drake
+		      dairlibtypes)
 
 add_subdirectory(acrobot)
 add_subdirectory(airhockey)

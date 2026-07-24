@@ -73,6 +73,7 @@ EventStatus ModelPredictiveController::UpdateAbstractState(
   optimizer_.UpdateNominalTrajectory(q_nom_new, prob.v_nom);
 
   // Solve the trajectory optimization problem from the new initial condition
+  std::cout << "Solving from condition: " << q0 << std::endl;
   optimizer_.ResetInitialConditions(q0, v0);
   TrajectoryOptimizerStats<double> stats;
   TrajectoryOptimizerSolution<double> solution;
@@ -80,6 +81,7 @@ EventStatus ModelPredictiveController::UpdateAbstractState(
 
   // Store the result in the discrete state
   StoreOptimizerSolution(solution, context.get_time(), &stored_trajectory);
+  std::cout << "solved at t: " << context.get_time() << std::endl;
 
   return EventStatus::Succeeded();
 }
@@ -120,6 +122,7 @@ void ModelPredictiveController::StoreOptimizerSolution(
       u_knots[i] = B_.transpose() * solution.tau[i - 1];
     } else {
       u_knots[i] = B_.transpose() * solution.tau[i];
+      std::cout << "u at " << i << ": " << u_knots[i] << std::endl;
     }
   }
 

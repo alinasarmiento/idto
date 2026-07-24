@@ -7,9 +7,18 @@
 
 #include "examples/mpc_controller.h"
 #include "examples/pd_plus_controller.h"
+#include "examples/standalone_lcm_systems.h"
 #include <drake/common/fmt_eigen.h>
 #include <drake/systems/primitives/discrete_time_delay.h>
 #include <drake/visualization/visualization_config_functions.h>
+#include <drake/systems/lcm/lcm_publisher_system.h>
+#include <drake/systems/lcm/lcm_subscriber_system.h>
+#include "drake/lcm/drake_lcm.h"
+
+#include "examples/lcm_driven_loop.h"
+#include "dairlib/lcmt_robot_output.hpp"
+#include "dairlib/lcmt_object_state.hpp"
+#include "dairlib/lcmt_trajectory_block.hpp"
 
 namespace idto {
 namespace examples {
@@ -19,11 +28,16 @@ using drake::multibody::Body;
 using drake::multibody::BodyIndex;
 using drake::systems::DiscreteTimeDelay;
 using drake::visualization::AddDefaultVisualization;
+using drake::systems::TriggerType;
+using drake::systems::TriggerTypeSet;
 using Eigen::Matrix4d;
 using mpc::Interpolator;
 using mpc::ModelPredictiveController;
 using pd_plus::PdPlusController;
 using utils::FindIdtoResource;
+
+using drake::systems::lcm::LcmPublisherSystem;
+using drake::systems::lcm::LcmSubscriberSystem;
 
 void TrajOptExample::RunExample(const std::string options_file,
                                 const bool test) const {
@@ -56,6 +70,39 @@ void TrajOptExample::RunExample(const std::string options_file,
   }
 }
 
+void TrajOptExample::RunStandaloneExample(const std::string options_file,
+					  const int state_size,
+					  const bool test) const {
+  // Load parameters from file
+  TrajOptExampleParams default_options;
+  TrajOptExampleParams options =
+      drake::yaml::LoadYamlFile<TrajOptExampleParams>(
+          FindIdtoResource(options_file), {}, default_options);
+
+  if (test) {
+    // Use simplified options for a smoke test
+    options.mpc = false;
+    options.max_iters = 10;
+    options.save_solver_stats_csv = false;
+    options.play_target_trajectory = false;
+    options.play_initial_guess = false;
+    options.play_optimal_trajectory = false;
+    options.num_threads = 1;
+  }
+
+  UpdateCustomMeshcatElements(options);
+
+  if (options.mpc) {
+    // Run a simulation that uses the optimizer as a model predictive controller
+    RunStandaloneMPC(options, state_size);
+  } else {
+    // Solve a single instance of the optimization problem and play back the
+    // result on the visualizer
+    SolveTrajectoryOptimization(options);
+  }
+}
+
+  
 void TrajOptExample::RunModelPredictiveControl(
     const TrajOptExampleParams& options) const {
   // Perform a full solve to convergence (as defined by YAML parameters) to
@@ -183,7 +230,7 @@ void TrajOptExample::RunModelPredictiveControl(
   // small extra buffer
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
   // Force an initial publish so geometry definitely exists
-  meshcat_->Delete();
+  // meshcat_->Delete();
   diagram->ForcedPublish(simulator.get_context());
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
   meshcat_->StartRecording();
@@ -202,6 +249,140 @@ void TrajOptExample::RunModelPredictiveControl(
   std::cout << TableOfAverages() << std::endl;
 }
 
+void TrajOptExample::RunStandaloneMPC(
+  const TrajOptExampleParams& options, int state_size) const {
+  // Perform a full solve to convergence (as defined by YAML parameters) to
+  // warm-start the first MPC iteration. Subsequent MPC iterations will be
+  // warm-started based on the prior MPC iteration.
+  TrajectoryOptimizerSolution<double> initial_solution =
+      SolveTrajectoryOptimization(options);
+
+  // Set up the system diagram for the simulator
+  DiagramBuilder<double> builder;
+
+  // Construct the multibody plant system model
+  MultibodyPlantConfig config;
+  config.time_step = options.sim_time_step;
+  auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
+  CreatePlantModelForSimulation(&plant);
+  plant.Finalize();
+
+  const int nq = plant.num_positions();
+  const int nv = plant.num_velocities();
+  const int nu = plant.num_actuators();
+
+  // Create a system model for the controller
+  DiagramBuilder<double> ctrl_builder;
+  MultibodyPlantConfig ctrl_config;
+  ctrl_config.time_step = options.time_step;
+  auto [ctrl_plant, ctrl_scene_graph] =
+      AddMultibodyPlant(ctrl_config, &ctrl_builder);
+  CreatePlantModel(&ctrl_plant);
+  ctrl_plant.Finalize();
+  auto ctrl_diagram = ctrl_builder.Build();
+
+  // Define the optimization problem
+  ProblemDefinition opt_prob;
+  SetProblemDefinition(options, plant, &opt_prob);
+
+  // Set MPC-specific solver parameters
+  SolverParameters solver_params;
+  SetSolverParameters(options, &solver_params);
+  solver_params.max_iterations = options.mpc_iters;
+
+  // Set up the MPC system
+  const double replan_period = 1. / options.controller_frequency;
+  auto controller = builder.AddSystem<ModelPredictiveController>(
+      ctrl_diagram.get(), &ctrl_plant, opt_prob, initial_solution,
+      solver_params, replan_period);
+
+  // Create an interpolator to send samples from the optimal trajectory at a
+  // faster rate
+  auto interpolator = builder.AddSystem<Interpolator>(nq, nv, nu);
+
+  // Connect the MPC controller to the interpolator
+  // N.B. We place a delay block between the MPC controller and the interpolator
+  // to simulate the fact that the system continues to evolve over time as the
+  // optimizer solves the trajectory optimization problem.
+  mpc::StoredTrajectory placeholder_trajectory;
+  controller->StoreOptimizerSolution(initial_solution, 0.0,
+                                     &placeholder_trajectory);
+
+  auto delay = builder.AddSystem<DiscreteTimeDelay>(
+      replan_period, 1, drake::Value(placeholder_trajectory));
+  builder.Connect(controller->get_trajectory_output_port(),
+                  delay->get_input_port());
+  builder.Connect(delay->get_output_port(),
+                  interpolator->get_trajectory_input_port());
+
+  // Connect the interpolator to a low-level PD controller
+  const MatrixXd B = plant.MakeActuationMatrix();
+  auto dummy_context = plant.CreateDefaultContext();
+  MatrixXd N(nq, nv);
+  N = plant.MakeVelocityToQDotMap(*dummy_context);
+  MatrixXd Bq = N * B;
+
+  const MatrixXd Kp =
+      (options.Kp.size() == 0)
+          ? MatrixXd::Zero(nu, nq)
+          : static_cast<MatrixXd>(Bq.transpose() * options.Kp.asDiagonal());
+  const MatrixXd Kd =
+      (options.Kd.size() == 0)
+          ? MatrixXd::Zero(nu, nv)
+          : static_cast<MatrixXd>(B.transpose() * options.Kd.asDiagonal());
+
+  auto pd = builder.AddSystem<PdPlusController>(Kp, Kd, options.feed_forward);
+  builder.Connect(interpolator->get_state_output_port(),
+                  pd->get_nominal_state_input_port());
+  builder.Connect(interpolator->get_control_output_port(),
+                  pd->get_nominal_control_input_port());
+
+  // LCM subscribers / publishers
+  drake::lcm::DrakeLcm lcm("udpm://239.255.76.67:7667?ttl=0");
+  std::string lcm_block_channel = "BLOCK_STATE_SIMULATION";
+  std::string lcm_robot_channel = "ROBOT_STATE_SIMULATION";
+  std::string lcm_traj_channel = "INPUT_TRAJ";
+  auto block_state_sub = builder.AddSystem(LcmSubscriberSystem::Make<dairlib::lcmt_object_state>(lcm_block_channel, &lcm));
+  auto robot_state_sub = builder.AddSystem(LcmSubscriberSystem::Make<dairlib::lcmt_robot_output>(lcm_robot_channel, &lcm));
+  auto state_receiver = builder.AddSystem<LcmStateReceiver>(state_size);
+  auto trajectory_sender = builder.AddSystem(LcmPublisherSystem::Make<dairlib::lcmt_trajectory_block>(lcm_traj_channel,
+													    &lcm,
+													    TriggerTypeSet({TriggerType::kForced})));
+  auto trajectory_adapter = builder.AddSystem<LcmTrajAdapter>();
+  
+  // builder.Connect(state_receiver->get_output_port(), pd->get_state_input_port());
+  builder.Connect(robot_state_sub->get_output_port(),
+		  state_receiver->get_robot_input_port());
+  builder.Connect(block_state_sub->get_output_port(),
+		  state_receiver->get_obj_input_port());
+  builder.Connect(state_receiver->get_output_port(), controller->get_state_input_port());
+  builder.Connect(controller->get_trajectory_output_port(),
+		  trajectory_adapter->get_input_port());
+  builder.Connect(trajectory_adapter->get_output_port(),
+		  trajectory_sender->get_input_port());
+
+  // Compile the diagram
+  auto diagram = builder.Build();
+  std::cout << "diagram built" << std::endl;
+  std::unique_ptr<drake::systems::Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  // drake::systems::Context<double>& plant_context =
+  //     diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
+  systems::LcmDrivenLoop<dairlib::lcmt_robot_output> loop(&lcm, std::move(diagram),
+							  state_receiver,
+							  lcm_robot_channel,true);
+  std::cout << "waiting for block messages.." << std::endl;
+  LcmHandleSubscriptionsUntil(&lcm, [&]() {return block_state_sub->GetInternalMessageCount()>1; });
+
+  std::cout << "simulating" << std::endl;
+  loop.Simulate();
+  
+  // Print profiling info
+  std::cout << TableOfAverages() << std::endl;
+}
+
+  
 TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
     const TrajOptExampleParams& options) const {
   // Create a system model

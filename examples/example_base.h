@@ -70,6 +70,9 @@ class TrajOptExample {
    *   - num_threads = 1; */
   void RunExample(const std::string options_file,
                   const bool test = false) const;
+  void RunStandaloneExample(const std::string options_file,
+			    const int state_size,
+			    const bool test = false) const;
 
   /**
    * Solve the optimization problem, as defined by the parameters in the given
@@ -89,6 +92,14 @@ class TrajOptExample {
    * parameters, etc.
    */
   void RunModelPredictiveControl(const TrajOptExampleParams& options) const;
+
+  /**
+   * Use the optimizer as an MPC controller, with simulation over LCM
+   *
+   * @param options YAML options, incluidng cost function definition, solver
+   * parameters, etc.
+   */
+  void RunStandaloneMPC(const TrajOptExampleParams& options, int state_size) const;
 
   /**
    * Set an optimization problem from example options which were loaded from
