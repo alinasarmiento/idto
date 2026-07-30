@@ -106,24 +106,18 @@ class Block1dExample : public TrajOptExample {
                                   "ground", green);
     plant->RegisterVisualGeometry(plant->world_body(), X_table,
                                   Box(1.5, 1.5, 1), "table", tan);
+    // plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
+    //                                  Box(25, 25, 1), "ground",
+    //                                  CoulombFriction<double>(0.5,0.5));
 
     ProximityProperties ground_proximity;
     AddContactMaterial(3.0, {}, CoulombFriction<double>(0.5, 0.5),
                        &ground_proximity);
-    // AddCompliantHydroelasticProperties(0.1, 1e5, &ground_proximity);
+    AddCompliantHydroelasticProperties(0.1, 5e7, &ground_proximity);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
                                      Box(25, 25, 1), "ground",
                                      ground_proximity);
-    // plant->RegisterCollisionGeometry(plant->world_body(),
-    // 				     RigidTransformd::Identity(),
-    // 				     HalfSpace(),
-    // 				     "ground_collision",
-    // 				     CoulombFriction<double>(0.5, 0.5));
 
-    std::cout << "Model for Sim: " << std::endl;
-    // std::cout << "EE coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("ee", ee_model)) << std::endl;
-    // std::cout << "block coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("block", block_model)) << std::endl;
-    // std::cout << "ground coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("ground")) << std::endl;
   }
 };
 

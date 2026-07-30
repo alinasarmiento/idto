@@ -16,6 +16,7 @@
           <izz>0.011483</izz>
         </inertia>
       </inertial>
+
       <visual name="block">
         <pose>0 0 0.0 0 0 0</pose>
         <geometry>
@@ -27,6 +28,7 @@
           <diffuse>0.1 0.1 0.1 0.6</diffuse>
         </material>
       </visual>
+
       <collision name="block">
         <pose>0 0 0.0 0 0 0</pose>
         <geometry>
@@ -34,13 +36,21 @@
             <size>0.5 0.16 0.1</size>
           </box>
         </geometry>
+	<surface>
+	  <friction>
+	    <ode>
+	      <mu>0.5</mu>
+	      <mu2>0.5</mu2>
+	    </ode>
+	  </friction>
+	</surface>
         <drake:proximity_properties>
           <drake:compliant_hydroelastic/>
-          <drake:hydroelastic_modulus> 3.0e7 </drake:hydroelastic_modulus>
-          <drake:mesh_resolution_hint> 0.02 </drake:mesh_resolution_hint>
-          <drake:hunt_crossley_dissipation>1</drake:hunt_crossley_dissipation>
-          <drake:mu_dynamic>1.0</drake:mu_dynamic>
-	  <drake:mu_static>1.0</drake:mu_static>
+          <drake:hydroelastic_modulus> 5e6 </drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint> 0.1 </drake:mesh_resolution_hint>
+          <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+          <!-- <drake:mu_dynamic>0.5</drake:mu_dynamic> -->
+	  <!-- <drake:mu_static>0.5</drake:mu_static> -->
         </drake:proximity_properties>
       </collision>
     </link>

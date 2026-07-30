@@ -99,10 +99,8 @@ std::vector<double> MakeSampleTimes(const mpc::StoredTrajectory& traj) {
     return times;
   }
 
-  times.push_back(traj.start_time);
-
   for (double t : traj.q.get_segment_times()) {
-    if (t > traj.start_time + 1e-12) {
+    if (t > 0) {
       const auto it = std::find(times.begin(), times.end(), t);
       if (it == times.end()) {
         times.push_back(t);
@@ -161,7 +159,7 @@ void LcmTrajAdapter::ConvertTraj(
   output->time_vec.clear();
   output->time_vec.resize(num_points);
   for (int i = 0; i < num_points; ++i) {
-    output->time_vec[i] = sample_times[i];
+    output->time_vec[i] = sample_times[i] + traj.start_time;
   }
 
   output->datatypes.clear();
@@ -169,6 +167,10 @@ void LcmTrajAdapter::ConvertTraj(
   output->datapoints.clear();
   output->datapoints.resize(output->num_datatypes, std::vector<double>(num_points));
 
+  // std::cout << "WRITING NEW MSG" << std::endl;
+  // for (int i=0; i<num_points; ++i){
+  //   std::cout << output->time_vec[i] << std::endl;
+  // }
   for (int row = 0; row < num_u; ++row) {
     const int out_row = row;
     output->datatypes[out_row] = "u_" + std::to_string(row);

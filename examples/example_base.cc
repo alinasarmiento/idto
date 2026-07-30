@@ -63,10 +63,12 @@ void TrajOptExample::RunExample(const std::string options_file,
   if (options.mpc) {
     // Run a simulation that uses the optimizer as a model predictive controller
     RunModelPredictiveControl(options);
+    std::cout << "running MPC" << std::endl;
   } else {
     // Solve a single instance of the optimization problem and play back the
     // result on the visualizer
     SolveTrajectoryOptimization(options);
+    std::cout << "running traj opt" << std::endl;
   }
 }
 
@@ -222,8 +224,8 @@ void TrajOptExample::RunModelPredictiveControl(
   // fix for race condition
   // Wait for Meshcat browser connection
   std::cout << meshcat_->web_url() << std::endl;
-  // meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
-  //                   drake::geometry::Rgba(1,0,0,1));
+  meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
+                    drake::geometry::Rgba(1,0,0,0.1));
   while (meshcat_->GetNumActiveConnections() == 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -234,6 +236,7 @@ void TrajOptExample::RunModelPredictiveControl(
   diagram->ForcedPublish(simulator.get_context());
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
   meshcat_->StartRecording();
+  std::cout << "Advancing to: " << options.sim_time << std::endl;
   simulator.AdvanceTo(options.sim_time);
   meshcat_->StopRecording();
   meshcat_->PublishRecording();
@@ -553,6 +556,17 @@ void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
 
   const VectorXd u = VectorXd::Zero(plant.num_actuators());
   plant.get_actuation_input_port().FixValue(&plant_context, u);
+
+  std::cout << meshcat_->web_url() << std::endl;
+  meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
+                    drake::geometry::Rgba(1,0,0,0.1));
+  while (meshcat_->GetNumActiveConnections() == 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  // small extra buffer
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  // Force an initial publish so geometry definitely exists
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
   // Set up a recording for later playback in Meshcat
   meshcat_->StartRecording();

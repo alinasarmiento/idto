@@ -112,6 +112,7 @@ void ModelPredictiveController::StoreOptimizerSolution(
   for (int i = 0; i < num_steps_; ++i) {
     // Time steps
     time_steps.push_back(i * time_step_);
+    // std::cout << "t at " << i << ": " << start_time + i*time_step_ << std::endl;
 
     // Generalized positions and velocities
     q_knots[i] = solution.q[i];
