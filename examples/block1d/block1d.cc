@@ -44,13 +44,15 @@ class Block1dExample : public TrajOptExample {
         FindIdtoResource("idto/models/planar_ee.urdf");
     ModelInstanceIndex ee_model = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_ee_model(RollPitchYaw<double>(0, 0, 0), //M_PI_2),
-                           Vector3d(0, 0, 0.05));
+                           Vector3d(0, 0, 0.08));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base_link"),
                       X_ee_model);
     plant->set_gravity_enabled(ee_model, false);
 
     // Add a manipuland with sphere contact
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    std::string manipuland_file =
+        FindIdtoResource("idto/models/box_15cm.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
 
     // Add the ground
@@ -64,7 +66,7 @@ class Block1dExample : public TrajOptExample {
                                   Box(1.5, 1.5, 1), "table", tan);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
                                      Box(25, 25, 1), "ground",
-                                     CoulombFriction<double>(0.5, 0.5));
+                                     CoulombFriction<double>(0.1, 0.1));
     // plant->RegisterCollisionGeometry(plant->world_body(),
     // 				     RigidTransformd::Identity(),
     // 				     HalfSpace(),
@@ -73,7 +75,7 @@ class Block1dExample : public TrajOptExample {
 
     std::cout << "Model for controller: " << std::endl;
     std::cout << "EE coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("ee", ee_model))[0] << std::endl;
-    std::cout << "block coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("block", block_model[0]))[0] << std::endl;
+    // std::cout << "block coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("block", block_model[0]))[0] << std::endl;
     // std::cout << "ground coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("ground")) << std::endl;
     // std::cout << "table coll: " << plant->GetCollisionGeometriesForBody(plant->GetBodyByName("table")) << std::endl;
   }
@@ -94,7 +96,9 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, true);
 
     // Add a manipuland with compliant hydroelastic contact
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    std::string manipuland_file =
+        FindIdtoResource("idto/models/box_15cm.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
 
     // Add the ground with compliant hydroelastic contact
@@ -111,7 +115,7 @@ class Block1dExample : public TrajOptExample {
     //                                  CoulombFriction<double>(0.5,0.5));
 
     ProximityProperties ground_proximity;
-    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.5, 0.5),
+    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.1, 0.1),
                        &ground_proximity);
     AddCompliantHydroelasticProperties(0.1, 5e7, &ground_proximity);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
