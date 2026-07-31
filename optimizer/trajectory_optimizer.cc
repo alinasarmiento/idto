@@ -275,8 +275,22 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
           .template Eval<drake::geometry::QueryObject<T>>(context);
   const drake::geometry::SceneGraphInspector<T>& inspector =
       query_object.inspector();
-  const std::vector<SignedDistancePair<T>>& signed_distance_pairs =
-      query_object.ComputeSignedDistancePairwiseClosestPoints(threshold);
+
+  std::vector<SignedDistancePair<T>> signed_distance_pairs;
+  if (!params_.manual_contact_pairs) {
+    signed_distance_pairs = query_object.ComputeSignedDistancePairwiseClosestPoints(threshold);
+  }
+  else { // Allow users to specify contact pairs. TODO: move geometry ID logic to happen once during init.
+    signed_distance_pairs.resize(params_.contact_pairs.size()/2);
+    for (long unsigned int i = 0; i < params_.contact_pairs.size(); i+=2) {
+      drake::geometry::GeometryId id_A = plant()
+            .GetCollisionGeometriesForBody(plant().GetBodyByName(params_.contact_pairs[i]))[0];
+      drake::geometry::GeometryId id_B = plant()
+            .GetCollisionGeometriesForBody(plant().GetBodyByName(params_.contact_pairs[i+1]))[0];
+      signed_distance_pairs[i/2] = 
+          query_object.ComputeSignedDistancePairClosestPoints(id_A, id_B);
+    }
+  }
 
   for (const SignedDistancePair<T>& pair : signed_distance_pairs) {
     // Normal outwards from A.
@@ -2683,6 +2697,12 @@ ConvergenceReason TrajectoryOptimizer<T>::VerifyConvergenceCriteria(
   if (dq_norm <
       tolerances.abs_state_change + tolerances.rel_state_change * q_norm) {
     reason |= ConvergenceReason::kSateCriterionSatisfied;
+  }
+
+  // Constraint tolerance is small enough and cost variation is small
+  const VectorX<T>& h = EvalEqualityConstraintViolations(state);
+  if (abs(previous_cost - cost) <= 1e-3 && h.cwiseAbs().maxCoeff() <= 1e-4) {
+    reason |= ConvergenceReason::kCostConstraintSatisfied;
   }
 
   return ConvergenceReason(reason);

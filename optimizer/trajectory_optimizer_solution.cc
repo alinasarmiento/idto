@@ -20,6 +20,10 @@ std::string DecodeConvergenceReasons(ConvergenceReason reason) {
     if (!reasons.empty()) reasons += ", ";
     reasons += "state change";
   }
+  if ((reason & ConvergenceReason::kCostConstraintSatisfied) != 0) {
+    if (!reasons.empty()) reasons += ", ";
+    reasons += "constraint with small delta cost";
+  }
   return reasons;
 }
 
