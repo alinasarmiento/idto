@@ -558,8 +558,6 @@ void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
   plant.get_actuation_input_port().FixValue(&plant_context, u);
 
   std::cout << meshcat_->web_url() << std::endl;
-  meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
-                    drake::geometry::Rgba(1,0,0,0.1));
   while (meshcat_->GetNumActiveConnections() == 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
