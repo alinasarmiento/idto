@@ -24,10 +24,11 @@ enum SolverFlag {
 // satisfied at a time.
 enum ConvergenceReason : int {
   // Bitmask-able values so they can be OR'd together.
-  kNoConvergenceCriteriaSatisfied = 0b000,
-  kCostReductionCriterionSatisfied = 0b001,
-  kGradientCriterionSatisfied = 0b010,
-  kSateCriterionSatisfied = 0b100
+  kNoConvergenceCriteriaSatisfied = 0b0000,
+  kCostReductionCriterionSatisfied = 0b0001,
+  kGradientCriterionSatisfied = 0b0010,
+  kSateCriterionSatisfied = 0b0100,
+  kCostConstraintSatisfied = 0b1000
 };
 
 std::string DecodeConvergenceReasons(ConvergenceReason reason);

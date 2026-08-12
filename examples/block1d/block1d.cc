@@ -50,7 +50,9 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, false);
 
     // Add a manipuland with sphere contact
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
+    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    std::string manipuland_file =
+        FindIdtoResource("idto/models/box_15cm_manual_contacts.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
 
     // Add the ground

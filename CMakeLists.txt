@@ -12,24 +12,31 @@ find_package(drake CONFIG REQUIRED)
 find_package(lcm REQUIRED)
 include(${LCM_USE_FILE})
 
-find_package(PythonInterp ${drake_PYTHON_VERSION} MODULE REQUIRED EXACT)
+if(CMAKE_VERSION VERSION_LESS "3.27")
+    # Legacy path: Safe for CMake 3.10+ and older pybind11
+    find_package(PythonInterp ${drake_PYTHON_VERSION} MODULE REQUIRED EXACT)
 
-find_program(PYTHON_EXECUTABLE NAMES python3
-  PATHS "${FIND_PYTHON_EXECUTABLE_PATHS}"
-  NO_DEFAULT_PATH
-)
+    find_program(PYTHON_EXECUTABLE NAMES python3
+      PATHS "${FIND_PYTHON_EXECUTABLE_PATHS}"
+      NO_DEFAULT_PATH
+    )
 
-execute_process(COMMAND ${PYTHON_EXECUTABLE}-config --exec-prefix
-  OUTPUT_VARIABLE PYTHON_EXEC_PREFIX
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-list(APPEND CMAKE_PREFIX_PATH "${PYTHON_EXEC_PREFIX}")
-find_package(PythonLibs ${drake_PYTHON_VERSION} MODULE REQUIRED EXACT)
+    execute_process(COMMAND ${PYTHON_EXECUTABLE}-config --exec-prefix
+      OUTPUT_VARIABLE PYTHON_EXEC_PREFIX
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    list(APPEND CMAKE_PREFIX_PATH "${PYTHON_EXEC_PREFIX}")
+    find_package(PythonLibs ${drake_PYTHON_VERSION} MODULE REQUIRED EXACT)
 
-get_filename_component(PYTHONPATH
-  "${drake_DIR}/../../python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages"
-  REALPATH
-)
+else()
+    # Modern path: Required for CMake 3.27+ to prevent pybind11 cache collisions
+    find_package(Python3 ${drake_PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development)
+    
+    # Alias the modern variables back to the legacy names so the rest of the file works
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+    set(PYTHON_VERSION_MAJOR ${Python3_VERSION_MAJOR})
+    set(PYTHON_VERSION_MINOR ${Python3_VERSION_MINOR})
+endif()
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
