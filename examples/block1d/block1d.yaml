@@ -45,7 +45,7 @@ Qfv: [0,
 
 # Problem definition parameters
 time_step : 0.05    # Discretization timestep (seconds)
-num_steps : 100     # number of timesteps
+num_steps : 20     # number of timesteps
 
 # Solver parameters
 max_iters : 300              # maximum Gauss-Newton iterations
