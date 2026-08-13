@@ -279,6 +279,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
   std::vector<SignedDistancePair<T>> signed_distance_pairs;
   if (!params_.manual_contact_pairs) {
     signed_distance_pairs = query_object.ComputeSignedDistancePairwiseClosestPoints(threshold);
+    std::cout << "no manual  contact pairs specified. computing all pairs" << std::endl;
   }
   else { // Allow users to specify contact pairs. TODO: move geometry ID logic to happen once during init.
     signed_distance_pairs.resize(params_.contact_pairs.size()/2);
@@ -289,6 +290,8 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
             .GetCollisionGeometriesForBody(plant().GetBodyByName(params_.contact_pairs[i+1]))[0];
       signed_distance_pairs[i/2] = 
           query_object.ComputeSignedDistancePairClosestPoints(id_A, id_B);
+      std::cout << "pair: " << id_A << " / " << id_B << std::endl;
+      std::cout << params_.contact_pairs[i] << " / " << params_.contact_pairs[i+1] << std::endl;
     }
   }
 

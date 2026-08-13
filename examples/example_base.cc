@@ -96,6 +96,8 @@ void TrajOptExample::RunStandaloneExample(const std::string options_file,
 
   if (options.mpc) {
     // Run a simulation that uses the optimizer as a model predictive controller
+    std::cout << "calling RunStandaloneMPC..." << std::endl;
+    
     RunStandaloneMPC(options, state_size);
   } else {
     // Solve a single instance of the optimization problem and play back the
@@ -224,8 +226,8 @@ void TrajOptExample::RunModelPredictiveControl(
   // fix for race condition
   // Wait for Meshcat browser connection
   std::cout << meshcat_->web_url() << std::endl;
-  meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
-                    drake::geometry::Rgba(1,0,0,0.1));
+  // meshcat_->SetObject("/test", drake::geometry::Box(0.5,0.5,0.5),
+  //                   drake::geometry::Rgba(1,0,0,0.1));
   while (meshcat_->GetNumActiveConnections() == 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -741,6 +743,10 @@ void TrajOptExample::SetSolverParameters(
 
   // Number of threads
   solver_params->num_threads = options.num_threads;
+
+  // Manual contact mode (arunleob)
+  solver_params->manual_contact_pairs = options.manual_contact_pairs;
+  solver_params->contact_pairs = options.contact_pairs;
 
   // Check which DoFs the cost is updated relative to the initial condition for
   VectorX<bool> q_nom_relative = options.q_nom_relative_to_q_init;

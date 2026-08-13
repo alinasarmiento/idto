@@ -50,9 +50,9 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, false);
 
     // Add a manipuland with sphere contact
-    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
-    std::string manipuland_file =
-        FindIdtoResource("idto/models/box_15cm_manual_contacts.sdf");
+    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
+    // std::string manipuland_file =
+    //     FindIdtoResource("idto/models/box_15cm_manual_contacts.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
 
     // Add the ground
@@ -66,7 +66,7 @@ class Block1dExample : public TrajOptExample {
                                   Box(1.5, 1.5, 1), "table", tan);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
                                      Box(25, 25, 1), "ground",
-                                     CoulombFriction<double>(0.1, 0.1));
+                                     CoulombFriction<double>(0.3, 0.3));
     // plant->RegisterCollisionGeometry(plant->world_body(),
     // 				     RigidTransformd::Identity(),
     // 				     HalfSpace(),
@@ -96,9 +96,10 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, true);
 
     // Add a manipuland with compliant hydroelastic contact
+    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
     // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
-    std::string manipuland_file =
-        FindIdtoResource("idto/models/box_15cm.sdf");
+    // std::string manipuland_file =
+    //     FindIdtoResource("idto/models/box_15cm.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
 
     // Add the ground with compliant hydroelastic contact
@@ -115,7 +116,7 @@ class Block1dExample : public TrajOptExample {
     //                                  CoulombFriction<double>(0.5,0.5));
 
     ProximityProperties ground_proximity;
-    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.1, 0.1),
+    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.3, 0.3),
                        &ground_proximity);
     AddCompliantHydroelasticProperties(0.1, 5e7, &ground_proximity);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
