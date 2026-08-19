@@ -14,7 +14,7 @@ DEFINE_double(ee_x_init, 0.0,
 
 namespace idto {
 namespace examples {
-namespace block1d {
+namespace block2d {
 
 using drake::geometry::AddCompliantHydroelasticProperties;
 using drake::geometry::AddContactMaterial;
@@ -30,9 +30,9 @@ using drake::multibody::Parser;
 using Eigen::Vector3d;
 using utils::FindIdtoResource;
 
-class Block1dExample : public TrajOptExample {
+class Block2dExample : public TrajOptExample {
  public:
-  Block1dExample() {
+  Block2dExample() {
     // Set the camera viewpoint
     const Vector3d camera_pose(1.5, 0.0, 0.5);
     const Vector3d target_pose(0.0, 0.0, 0.0);
@@ -71,12 +71,12 @@ class Block1dExample : public TrajOptExample {
 
  private:
   void CreatePlantModel(MultibodyPlant<double>* plant) const final {
-    // Add a block1d arm without gravity
+    // Add a block2d arm without gravity
     std::string robot_file =
-        FindIdtoResource("idto/models/planar_ee_1d.urdf");
+        FindIdtoResource("idto/models/planar_ee.urdf");
     ModelInstanceIndex ee_model = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_ee_model(RollPitchYaw<double>(0, 0, 0), //M_PI_2),
-                           Vector3d(0, 0, 0.08));
+                           Vector3d(0, 0, 0.0));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base_link"),
                       X_ee_model);
     plant->set_gravity_enabled(ee_model, false);
@@ -117,12 +117,12 @@ class Block1dExample : public TrajOptExample {
     // Use hydroelastic contact, and throw instead of point contact fallback
     // plant->set_contact_model(drake::multibody::ContactModel::kHydroelastic);
 
-    // Add a block1d arm, including gravity, with rigid hydroelastic contact
+    // Add a block2d arm, including gravity, with rigid hydroelastic contact
     std::string robot_file =
-        FindIdtoResource("idto/models/planar_ee_1d.urdf");
+        FindIdtoResource("idto/models/planar_ee.urdf");
     ModelInstanceIndex ee_model = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_ee_model(RollPitchYaw<double>(0, 0, 0), //M_PI_2),
-			       Vector3d(0, 0, 0.05));
+			       Vector3d(0, 0, 0.0));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base_link"),
                       X_ee_model);
     plant->set_gravity_enabled(ee_model, true);
@@ -158,16 +158,16 @@ class Block1dExample : public TrajOptExample {
   }
 };
 
-}  // namespace block1d
+}  // namespace block2d
 }  // namespace examples
 }  // namespace idto
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  idto::examples::block1d::Block1dExample example;
+  idto::examples::block2d::Block2dExample example;
 
-  example.RunWithJointXOffset("idto/examples/block1d/block1d.yaml", 15,
+  example.RunWithJointXOffset("idto/examples/block2d/block2d.yaml", 15,
                              FLAGS_test);
 
   return 0;

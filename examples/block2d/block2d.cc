@@ -14,7 +14,7 @@ DEFINE_double(ee_x_init, 0.0,
 
 namespace idto {
 namespace examples {
-namespace block1d {
+namespace block2d {
 
 using drake::geometry::AddCompliantHydroelasticProperties;
 using drake::geometry::AddContactMaterial;
@@ -30,16 +30,16 @@ using drake::multibody::Parser;
 using Eigen::Vector3d;
 using utils::FindIdtoResource;
 
-class Block1dExample : public TrajOptExample {
+class Block2dExample : public TrajOptExample {
  public:
-  Block1dExample() {
+  Block2dExample() {
     // Set the camera viewpoint
     const Vector3d camera_pose(1.5, 0.0, 0.5);
     const Vector3d target_pose(0.0, 0.0, 0.0);
     meshcat_->SetCameraPose(camera_pose, target_pose);
   }
 
-  void RunWithJointXOffset(const std::string options_file,
+  void RunWithFrictionFlag(const std::string options_file,
                           const int state_size,
                           const bool test) const {
     TrajOptExampleParams default_options;
@@ -71,12 +71,12 @@ class Block1dExample : public TrajOptExample {
 
  private:
   void CreatePlantModel(MultibodyPlant<double>* plant) const final {
-    // Add a block1d arm without gravity
+    // Add a block2d arm without gravity
     std::string robot_file =
-        FindIdtoResource("idto/models/planar_ee_1d.urdf");
+        FindIdtoResource("idto/models/planar_ee_2d.urdf");
     ModelInstanceIndex ee_model = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_ee_model(RollPitchYaw<double>(0, 0, 0), //M_PI_2),
-                           Vector3d(0, 0, 0.08));
+                           Vector3d(0, 0, 0.0));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base_link"),
                       X_ee_model);
     plant->set_gravity_enabled(ee_model, false);
@@ -98,7 +98,7 @@ class Block1dExample : public TrajOptExample {
                                   Box(10, 1.5, 1), "table", tan);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
                                      Box(25, 25, 1), "ground",
-                                     CoulombFriction<double>(0.177, 0.177));
+                                     CoulombFriction<double>(0.0527, 0.0527));
     // plant->RegisterCollisionGeometry(plant->world_body(),
     // 				     RigidTransformd::Identity(),
     // 				     HalfSpace(),
@@ -117,12 +117,12 @@ class Block1dExample : public TrajOptExample {
     // Use hydroelastic contact, and throw instead of point contact fallback
     // plant->set_contact_model(drake::multibody::ContactModel::kHydroelastic);
 
-    // Add a block1d arm, including gravity, with rigid hydroelastic contact
+    // Add a block2d arm, including gravity, with rigid hydroelastic contact
     std::string robot_file =
-        FindIdtoResource("idto/models/planar_ee_1d.urdf");
+        FindIdtoResource("idto/models/planar_ee_2d.urdf");
     ModelInstanceIndex ee_model = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_ee_model(RollPitchYaw<double>(0, 0, 0), //M_PI_2),
-			       Vector3d(0, 0, 0.05));
+			       Vector3d(0, 0, 0.0));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base_link"),
                       X_ee_model);
     plant->set_gravity_enabled(ee_model, true);
@@ -148,7 +148,7 @@ class Block1dExample : public TrajOptExample {
     //                                  CoulombFriction<double>(0.5,0.5));
 
     ProximityProperties ground_proximity;
-    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.177, 0.177),
+    AddContactMaterial(3.0, {}, CoulombFriction<double>(0.0527, 0.0527),
                        &ground_proximity);
     AddCompliantHydroelasticProperties(0.1, 5e7, &ground_proximity);
     plant->RegisterCollisionGeometry(plant->world_body(), X_ground,
@@ -158,17 +158,16 @@ class Block1dExample : public TrajOptExample {
   }
 };
 
-}  // namespace block1d
+}  // namespace block2d
 }  // namespace examples
 }  // namespace idto
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  idto::examples::block1d::Block1dExample example;
+  idto::examples::block2d::Block2dExample example;
 
-  example.RunWithJointXOffset("idto/examples/block1d/block1d.yaml", 15,
-                             FLAGS_test);
+  example.RunExample("idto/examples/block2d/block2d.yaml", FLAGS_test);
 
   return 0;
 }

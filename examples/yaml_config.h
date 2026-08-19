@@ -27,6 +27,8 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(v_init));
     a->Visit(DRAKE_NVP(q_nom_start));
     a->Visit(DRAKE_NVP(q_nom_end));
+    a->Visit(DRAKE_NVP(v_nom_start));
+    a->Visit(DRAKE_NVP(v_nom_end));
     a->Visit(DRAKE_NVP(q_guess));
     a->Visit(DRAKE_NVP(Qq));
     a->Visit(DRAKE_NVP(Qv));
@@ -83,6 +85,8 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(static_html_filename));
     a->Visit(DRAKE_NVP(manual_contact_pairs));
     a->Visit(DRAKE_NVP(contact_pairs));
+    a->Visit(DRAKE_NVP(per_contact_friction));
+    a->Visit(DRAKE_NVP(friction_list));
   }
   // Initial state
   VectorXd q_init;
@@ -92,6 +96,9 @@ struct TrajOptExampleParams {
   // q_nom_start and q_nom_end
   VectorXd q_nom_start;
   VectorXd q_nom_end;
+
+  VectorXd v_nom_start;
+  VectorXd v_nom_end;
 
   // Initial guess is defined by linear interpolation between q_init and q_guess
   VectorXd q_guess;
@@ -220,6 +227,9 @@ struct TrajOptExampleParams {
 
   bool manual_contact_pairs{false};
   std::vector<std::string> contact_pairs;
+  
+  bool per_contact_friction{false};
+  std::vector<double> friction_list;
 };
 
 }  // namespace examples

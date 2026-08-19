@@ -168,6 +168,10 @@ struct SolverParameters {
   // Allow for user to specify the contact pairs to consider during the solve
   bool manual_contact_pairs{false};
   std::vector<std::string> contact_pairs;
+
+  // Allow specifying friction coefficient per contact (greysar)
+  bool per_contact_friction{false};
+  std::vector<double> friction_list;
 };
 
 }  // namespace optimizer

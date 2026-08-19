@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<robot name="ee">
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+  
+  <link name="base_link">
+    <!-- <visual> -->
+    <!--   <origin rpy="0 0 0" xyz="0 0 0.0"/> -->
+    <!--   <geometry> -->
+    <!--     <sphere radius="0.02"/> -->
+    <!--   </geometry> -->
+    <!-- </visual> -->
+  </link>
+
+  <!-- Intermediate dummy link to chain 2-DOF planar translation -->
+  <!-- <link name="dummy_x_link"> -->
+  <!--   <inertial> -->
+  <!--     <origin rpy="0 0 0" xyz="0 0 0"/> -->
+  <!--     <mass value="0.001"/> -->
+  <!--     <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/> -->
+  <!--   </inertial> -->
+  <!-- </link> -->
+  
+  <link name="ee">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="1.6e-5" ixy="0" ixz="0" iyy="1.6e-5" iyz="0" izz="1.6e-5"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+    </visual>
+
+    <collision name="collision">
+      <origin rpy="0 0 0" xyz="0 0 0.0"/>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <surface>
+        <friction>
+          <ode>
+            <mu>0.01</mu>
+            <mu2>0.01</mu2>
+          </ode>
+        </friction>
+      </surface>
+      <drake:proximity_properties>
+        <drake:mu_static value="1.0"/>
+        <drake:mu_dynamic value="1.0"/>
+      </drake:proximity_properties>
+    </collision>    
+  </link>
+
+  <!-- X-Axis Joint: base_link -> dummy_x_link -->
+  <joint name="ee_x" type="prismatic">
+    <parent link="base_link"/>
+    <!-- <child link="dummy_x_link"/> -->
+    <child link="ee"/>
+    <axis xyz="1 0 0"/>
+    <!-- <limit effort="10" lower="-0.7" upper="0.7" velocity="10"/> -->
+  </joint>
+
+  <!-- <!-\- Z-Axis Joint: dummy_x_link -> ee -\-> -->
+  <!-- <joint name="ee_z" type="prismatic"> -->
+  <!--   <parent link="dummy_x_link"/> -->
+  <!--   <child link="ee"/> -->
+  <!--   <axis xyz="0 0 1"/> -->
+  <!--   <!-\- <limit effort="10" lower="-0.7" upper="0.7" velocity="10"/> -\-> -->
+  <!-- </joint> -->
+
+  <!-- X Transmission -->
+  <transmission name="ee_x_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="ee_x"/>
+    <actuator name="x_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <!-- Z Transmission -->
+  <!-- <transmission name="ee_z_trans"> -->
+  <!--   <type>transmission_interface/SimpleTransmission</type> -->
+  <!--   <joint name="ee_z"/> -->
+  <!--   <actuator name="z_motor"/> -->
+  <!--   <mechanicalReduction>1</mechanicalReduction> -->
+  <!-- </transmission> -->
+
+</robot>

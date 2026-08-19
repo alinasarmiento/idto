@@ -261,7 +261,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
 
   // Friction parameters.
   const double vs = params_.stiction_velocity;     // Regularization.
-  const double mu = params_.friction_coefficient;  // Coefficient of friction.
+  // const double mu = params_.friction_coefficient; // Coefficient of friction.
 
   // Compute the distance at which contact forces are zero: we don't need to do
   // any geometry queries beyond this distance
@@ -279,7 +279,6 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
   std::vector<SignedDistancePair<T>> signed_distance_pairs;
   if (!params_.manual_contact_pairs) {
     signed_distance_pairs = query_object.ComputeSignedDistancePairwiseClosestPoints(threshold);
-    std::cout << "no manual  contact pairs specified. computing all pairs" << std::endl;
   }
   else { // Allow users to specify contact pairs. TODO: move geometry ID logic to happen once during init.
     signed_distance_pairs.resize(params_.contact_pairs.size()/2);
@@ -290,11 +289,13 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
             .GetCollisionGeometriesForBody(plant().GetBodyByName(params_.contact_pairs[i+1]))[0];
       signed_distance_pairs[i/2] = 
           query_object.ComputeSignedDistancePairClosestPoints(id_A, id_B);
-      std::cout << "pair: " << id_A << " / " << id_B << std::endl;
-      std::cout << params_.contact_pairs[i] << " / " << params_.contact_pairs[i+1] << std::endl;
+      // std::cout << "pair: " << id_A << " / " << id_B << std::endl;
+      // std::cout << params_.contact_pairs[i] << " / " << params_.contact_pairs[i+1] << std::endl;
     }
   }
 
+  // (greysar) -- this parses through each contact pair. want to add handling of mu here
+  size_t i = 0;
   for (const SignedDistancePair<T>& pair : signed_distance_pairs) {
     // Normal outwards from A.
     const drake::Vector3<T> nhat = -pair.nhat_BA_W;
@@ -344,6 +345,9 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
     const SpatialVelocity<T> V_WAc = V_WA.Shift(p_AC_W);
     const SpatialVelocity<T> V_WBc = V_WB.Shift(p_BC_W);
 
+    // Change friction coefficient if specified per-contact (greysar)
+    const double mu = params_.per_contact_friction ? params_.friction_list[i] : params_.friction_coefficient;
+    
     // Relative contact velocity.
     const drake::Vector3<T> v_AcBc_W =
         V_WBc.translational() - V_WAc.translational();
@@ -399,6 +403,8 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
     // Add the forces into the given MultibodyForces
     forces->mutable_body_forces()[bodyA.mobod_index()] += F_AAo_W;
     forces->mutable_body_forces()[bodyB.mobod_index()] += F_BBo_W;
+
+    ++i;
   }
 }
 

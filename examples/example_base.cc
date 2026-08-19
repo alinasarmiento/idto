@@ -272,9 +272,9 @@ void TrajOptExample::RunStandaloneMPC(
   CreatePlantModelForSimulation(&plant);
   plant.Finalize();
 
-  const int nq = plant.num_positions();
-  const int nv = plant.num_velocities();
-  const int nu = plant.num_actuators();
+  // const int nq = plant.num_positions();
+  // const int nv = plant.num_velocities();
+  // const int nu = plant.num_actuators();
 
   // Create a system model for the controller
   DiagramBuilder<double> ctrl_builder;
@@ -300,47 +300,6 @@ void TrajOptExample::RunStandaloneMPC(
   auto controller = builder.AddSystem<ModelPredictiveController>(
       ctrl_diagram.get(), &ctrl_plant, opt_prob, initial_solution,
       solver_params, replan_period);
-
-  // Create an interpolator to send samples from the optimal trajectory at a
-  // faster rate
-  auto interpolator = builder.AddSystem<Interpolator>(nq, nv, nu);
-
-  // Connect the MPC controller to the interpolator
-  // N.B. We place a delay block between the MPC controller and the interpolator
-  // to simulate the fact that the system continues to evolve over time as the
-  // optimizer solves the trajectory optimization problem.
-  mpc::StoredTrajectory placeholder_trajectory;
-  controller->StoreOptimizerSolution(initial_solution, 0.0,
-                                     &placeholder_trajectory);
-
-  auto delay = builder.AddSystem<DiscreteTimeDelay>(
-      replan_period, 1, drake::Value(placeholder_trajectory));
-  builder.Connect(controller->get_trajectory_output_port(),
-                  delay->get_input_port());
-  builder.Connect(delay->get_output_port(),
-                  interpolator->get_trajectory_input_port());
-
-  // Connect the interpolator to a low-level PD controller
-  const MatrixXd B = plant.MakeActuationMatrix();
-  auto dummy_context = plant.CreateDefaultContext();
-  MatrixXd N(nq, nv);
-  N = plant.MakeVelocityToQDotMap(*dummy_context);
-  MatrixXd Bq = N * B;
-
-  const MatrixXd Kp =
-      (options.Kp.size() == 0)
-          ? MatrixXd::Zero(nu, nq)
-          : static_cast<MatrixXd>(Bq.transpose() * options.Kp.asDiagonal());
-  const MatrixXd Kd =
-      (options.Kd.size() == 0)
-          ? MatrixXd::Zero(nu, nv)
-          : static_cast<MatrixXd>(B.transpose() * options.Kd.asDiagonal());
-
-  auto pd = builder.AddSystem<PdPlusController>(Kp, Kd, options.feed_forward);
-  builder.Connect(interpolator->get_state_output_port(),
-                  pd->get_nominal_state_input_port());
-  builder.Connect(interpolator->get_control_output_port(),
-                  pd->get_nominal_control_input_port());
 
   // LCM subscribers / publishers
   drake::lcm::DrakeLcm lcm("udpm://239.255.76.67:7667?ttl=0");
@@ -618,17 +577,27 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   opt_prob->q_nom =
       MakeLinearInterpolation(q_nom_start, q_nom_end, options.num_steps + 1);
 
-  opt_prob->v_nom.push_back(opt_prob->v_init);
-  for (int t = 1; t <= options.num_steps; ++t) {
-    if (options.q_init.size() == options.v_init.size()) {
-      // No quaternion DoFs, so compute v_nom from q_nom
-      opt_prob->v_nom.push_back((opt_prob->q_nom[t] - opt_prob->q_nom[t - 1]) /
-                                options.time_step);
-    } else {
-      // Set v_nom = v_init for systems with quaternion DoFs
-      // TODO(vincekurtz): enable better specification of v_nom for
-      // floating-base systems
-      opt_prob->v_nom.push_back(opt_prob->v_init);
+  const bool has_explicit_v_nom =
+      (options.v_nom_start.size() > 0) && (options.v_nom_end.size() > 0);
+  if (has_explicit_v_nom) {
+    DRAKE_DEMAND(options.v_nom_start.size() == options.v_init.size());
+    DRAKE_DEMAND(options.v_nom_end.size() == options.v_init.size());
+    opt_prob->v_nom = MakeLinearInterpolation(options.v_nom_start,
+                                             options.v_nom_end,
+                                             options.num_steps + 1);
+  } else {
+    opt_prob->v_nom.push_back(opt_prob->v_init);
+    for (int t = 1; t <= options.num_steps; ++t) {
+      if (options.q_init.size() == options.v_init.size()) {
+        // No quaternion DoFs, so compute v_nom from q_nom
+        opt_prob->v_nom.push_back((opt_prob->q_nom[t] - opt_prob->q_nom[t - 1]) /
+                                  options.time_step);
+      } else {
+        // Set v_nom = v_init for systems with quaternion DoFs
+        // TODO(vincekurtz): enable better specification of v_nom for
+        // floating-base systems
+        opt_prob->v_nom.push_back(opt_prob->v_init);
+      }
     }
   }
 
@@ -747,6 +716,10 @@ void TrajOptExample::SetSolverParameters(
   // Manual contact mode (arunleob)
   solver_params->manual_contact_pairs = options.manual_contact_pairs;
   solver_params->contact_pairs = options.contact_pairs;
+
+  // Per-contact friction coefficients (greysar)
+  solver_params->per_contact_friction = options.per_contact_friction;
+  solver_params->friction_list = options.friction_list;
 
   // Check which DoFs the cost is updated relative to the initial condition for
   VectorX<bool> q_nom_relative = options.q_nom_relative_to_q_init;
