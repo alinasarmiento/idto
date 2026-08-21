@@ -26,7 +26,7 @@
   <link name="ee">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <mass value="0.1"/>
+      <mass value="0.075"/>
       <inertia ixx="1.6e-5" ixy="0" ixz="0" iyy="1.6e-5" iyz="0" izz="1.6e-5"/>
     </inertial>
     <visual>
@@ -44,14 +44,14 @@
       <surface>
         <friction>
           <ode>
-            <mu>0.01</mu>
-            <mu2>0.01</mu2>
+            <mu>0.334</mu>
+            <mu2>0.334</mu2>
           </ode>
         </friction>
       </surface>
       <drake:proximity_properties>
-        <drake:mu_static value="1.0"/>
-        <drake:mu_dynamic value="1.0"/>
+        <drake:mu_static value="0.334"/>
+        <drake:mu_dynamic value="0.334"/>
       </drake:proximity_properties>
     </collision>    
   </link>

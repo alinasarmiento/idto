@@ -168,6 +168,7 @@ int main(int argc, char* argv[]) {
   idto::examples::block2d::Block2dExample example;
 
   example.RunExample("idto/examples/block2d/block2d.yaml", FLAGS_test);
+  // example.RunStandaloneExample("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);
 
   return 0;
 }

@@ -123,6 +123,7 @@ std::vector<double> MakeSampleTimes(const mpc::StoredTrajectory& traj) {
 }
 
 }  // namespace
+
   
 void LcmTrajAdapter::ConvertTraj(
     const drake::systems::Context<double>& context,
@@ -197,6 +198,7 @@ void LcmTrajAdapter::ConvertTraj(
       output->datapoints[out_row][i] = v_val(row);
     }
   }
+
 }
 
 }  // namespace examples

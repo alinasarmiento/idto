@@ -296,6 +296,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
 
   // (greysar) -- this parses through each contact pair. want to add handling of mu here
   size_t i = 0;
+  // std::cout << "PARSING CONTACTS" << std::endl;
   for (const SignedDistancePair<T>& pair : signed_distance_pairs) {
     // Normal outwards from A.
     const drake::Vector3<T> nhat = -pair.nhat_BA_W;
@@ -303,6 +304,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
     // Get geometry and transformation data for the witness points
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
+    // std::cout << "PAIR: " << geometryA_id << " / " << geometryB_id << std::endl;
 
     const Body<T>& bodyA =
         *(plant().GetBodyFromFrameId(inspector.GetFrameId(geometryA_id)));

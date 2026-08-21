@@ -85,11 +85,14 @@
     </joint>
 
     <link name="point_FR">
+      <inertial>
+        <mass>0.01</mass>
+      </inertial>
       <visual name="point_FR">
-        <pose>0.25 0.08 -0.04 0 0 0</pose>
+        <pose>0.25 0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
         <material>
@@ -97,10 +100,10 @@
         </material>
       </visual>
       <collision name="point_FR">
-        <pose>0.25 0.08 -0.040 0 0 0</pose>
+        <pose>0.25 0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
 	<surface>
@@ -126,11 +129,14 @@
     </joint>
 
     <link name="point_FL">
+      <inertial>
+        <mass>0.01</mass>
+      </inertial>
       <visual name="point_FL">
-        <pose>-0.25 0.08 -0.040 0 0 0</pose>
+        <pose>-0.25 0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
         <material>
@@ -138,10 +144,10 @@
         </material>
       </visual>
       <collision name="point_FL">
-        <pose>-0.25 0.08 -0.040 0 0 0</pose>
+        <pose>-0.25 0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
 	<surface>
@@ -167,11 +173,14 @@
     </joint>
 
     <link name="point_BR">
+      <inertial>
+        <mass>0.01</mass>
+      </inertial>
       <visual name="point_BR">
-        <pose>0.25 -0.08 -0.040 0 0 0</pose>
+        <pose>0.25 -0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
         <material>
@@ -179,10 +188,10 @@
         </material>
       </visual>
       <collision name="point_BR">
-        <pose>0.25 -0.08 -0.040 0 0 0</pose>
+        <pose>0.25 -0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
 	<surface>
@@ -207,11 +216,14 @@
       <child>point_BR</child>
     </joint>
     <link name="point_BL">
+      <inertial>
+        <mass>0.01</mass>
+      </inertial>
       <visual name="point_BL">
-        <pose>-0.25 -0.08 -0.040 0 0 0</pose>
+        <pose>-0.25 -0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
         <material>
@@ -219,10 +231,10 @@
         </material>
       </visual>
       <collision name="point_BL">
-        <pose>-0.25 -0.08 -0.040 0 0 0</pose>
+        <pose>-0.25 -0.08 -0.020 0 0 0</pose>
         <geometry>
           <sphere>
-            <radius>0.01</radius>
+            <radius>0.03</radius>
           </sphere>
         </geometry>
 	<surface>
