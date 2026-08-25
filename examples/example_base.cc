@@ -577,6 +577,7 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   opt_prob->q_nom =
       MakeLinearInterpolation(q_nom_start, q_nom_end, options.num_steps + 1);
 
+  // Add v_nom interpolation if included (greysar)
   const bool has_explicit_v_nom =
       (options.v_nom_start.size() > 0) && (options.v_nom_end.size() > 0);
   if (has_explicit_v_nom) {
@@ -604,6 +605,34 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   // Normalize quaternions in the reference and initial condition
   NormalizeQuaternions(plant, &opt_prob->q_nom);
   NormalizeQuaternions(plant, &opt_prob->q_init);
+  
+  // Set q_nom based on v_nom if option set (greysar)
+  if (options.q_from_v_nom){
+    DRAKE_DEMAND(options.qv_qidx.size() == plant.num_positions());
+    DRAKE_DEMAND(options.qv_vidx.size() == plant.num_velocities());
+    std::vector<int> q_indices;
+    std::vector<int> v_indices;
+    for (int i = 0; i < options.qv_qidx.size(); ++i) {
+      if (options.qv_qidx[i]) {
+	q_indices.push_back(i);
+      }
+    }
+    for (int i = 0; i < options.qv_vidx.size(); ++i) {
+      if (options.qv_vidx[i]) {
+	v_indices.push_back(i);
+      }
+    }
+    // Selected q and v coordinates must correspond one-to-one.
+    DRAKE_DEMAND(q_indices.size() == v_indices.size());
+
+    for (int k = 0; k < options.num_steps; ++k) {
+      for (std::size_t i = 0; i < q_indices.size(); ++i) {
+	opt_prob->q_nom[k + 1][q_indices[i]] = opt_prob->q_nom[k][q_indices[i]] + options.time_step * opt_prob->v_nom[k][v_indices[i]];
+      }
+    }
+  }
+  
+    
 }
 
 void TrajOptExample::SetSolverParameters(
@@ -720,6 +749,13 @@ void TrajOptExample::SetSolverParameters(
   // Per-contact friction coefficients (greysar)
   solver_params->per_contact_friction = options.per_contact_friction;
   solver_params->friction_list = options.friction_list;
+  
+  // Build q_nom from v_nom, starting at q_nom_init (greysar)
+  solver_params->q_from_v_nom = options.q_from_v_nom;
+  if (options.q_from_v_nom){
+    solver_params->qv_qidx = options.qv_qidx;
+    solver_params->qv_vidx = options.qv_vidx;
+  }
 
   // Check which DoFs the cost is updated relative to the initial condition for
   VectorX<bool> q_nom_relative = options.q_nom_relative_to_q_init;

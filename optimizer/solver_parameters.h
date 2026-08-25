@@ -172,6 +172,11 @@ struct SolverParameters {
   // Allow specifying friction coefficient per contact (greysar)
   bool per_contact_friction{false};
   std::vector<double> friction_list;
+  // Create q_nom from v_nom, instead of interpolation (greysar) -- q_nom_init will be used
+  bool q_from_v_nom;
+  VectorX<bool> qv_qidx;
+  VectorX<bool> qv_vidx;
+  
 };
 
 }  // namespace optimizer

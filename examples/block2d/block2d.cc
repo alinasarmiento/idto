@@ -129,7 +129,7 @@ class Block2dExample : public TrajOptExample {
 
     // Add a manipuland with compliant hydroelastic contact
     // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
+    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block2d.sdf");
     // std::string manipuland_file =
     //     FindIdtoResource("idto/models/box_15cm.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
   idto::examples::block2d::Block2dExample example;
 
   example.RunExample("idto/examples/block2d/block2d.yaml", FLAGS_test);
-  // example.RunStandaloneExample("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);
+  // example.RunStandaloneExample("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);;
 
   return 0;
 }

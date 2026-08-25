@@ -83,10 +83,14 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(q_nom_relative_to_q_init));
     a->Visit(DRAKE_NVP(save_mpc_result_as_static_html));
     a->Visit(DRAKE_NVP(static_html_filename));
+
     a->Visit(DRAKE_NVP(manual_contact_pairs));
     a->Visit(DRAKE_NVP(contact_pairs));
     a->Visit(DRAKE_NVP(per_contact_friction));
     a->Visit(DRAKE_NVP(friction_list));
+    a->Visit(DRAKE_NVP(q_from_v_nom)); // boolean; build q_nom based on v_nom
+    a->Visit(DRAKE_NVP(qv_qidx));
+    a->Visit(DRAKE_NVP(qv_vidx));
   }
   // Initial state
   VectorXd q_init;
@@ -230,6 +234,10 @@ struct TrajOptExampleParams {
   
   bool per_contact_friction{false};
   std::vector<double> friction_list;
+  bool q_from_v_nom{false};
+  VectorX<bool> qv_qidx;
+  VectorX<bool> qv_vidx;
+  
 };
 
 }  // namespace examples
