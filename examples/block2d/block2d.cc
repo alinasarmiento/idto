@@ -9,8 +9,12 @@
 DEFINE_bool(test, false,
             "whether this example is being run in test mode, where we solve a "
             "simpler problem");
-DEFINE_double(ee_x_init, 0.0,
-              "initial offset applied to the ee_x prismatic joint position");
+DEFINE_double(mu_ee, 0.8,
+              "EFFECTIVE mu_ee with block");
+DEFINE_double(mu_g, 0.1,
+              "EFFECTIVE mu_block with ground");
+DEFINE_double(stiction_vel, 0.05,
+	      "stiction vel for contact formulation");
 
 namespace idto {
 namespace examples {
@@ -39,19 +43,23 @@ class Block2dExample : public TrajOptExample {
     meshcat_->SetCameraPose(camera_pose, target_pose);
   }
 
-  void RunWithFrictionFlag(const std::string options_file,
-                          const int state_size,
-                          const bool test) const {
+  void RunWithExperimentFlags(const std::string options_file,
+			      const int state_size,
+			      const bool test) const {
     TrajOptExampleParams default_options;
     TrajOptExampleParams options =
         drake::yaml::LoadYamlFile<TrajOptExampleParams>(
             FindIdtoResource(options_file), {}, default_options);
 
-    const double ee_x_offset = FLAGS_ee_x_init;
-    if (options.q_init.size() > 0) options.q_init[0] += ee_x_offset;
-    if (options.q_nom_start.size() > 0) options.q_nom_start[0] += ee_x_offset;
-    if (options.q_guess.size() > 0) options.q_guess[0] += ee_x_offset;
+    const double mu_ee = FLAGS_mu_ee;
+    const double mu_g  = FLAGS_mu_g ;
+    options.friction_list = {mu_g, mu_g, mu_g, mu_g, mu_ee};
 
+    // double mu_ee_urdf = mu_ee / (2-mu_ee);
+
+    const double stiction_vel = FLAGS_stiction_vel;
+    options.stiction_velocity = stiction_vel;
+    
     if (test) {
       options.mpc = false;
       options.max_iters = 10;
@@ -82,7 +90,7 @@ class Block2dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, false);
 
     // Add a manipuland with sphere contact
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
+    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block2d_lcs.sdf");
     // std::string manipuland_file =
     //     FindIdtoResource("idto/models/box_15cm_manual_contacts.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
@@ -128,7 +136,6 @@ class Block2dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, true);
 
     // Add a manipuland with compliant hydroelastic contact
-    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
     std::string manipuland_file = FindIdtoResource("idto/models/blocks/block2d.sdf");
     // std::string manipuland_file =
     //     FindIdtoResource("idto/models/box_15cm.sdf");
@@ -167,8 +174,9 @@ int main(int argc, char* argv[]) {
 
   idto::examples::block2d::Block2dExample example;
 
-  example.RunExample("idto/examples/block2d/block2d.yaml", FLAGS_test);
-  // example.RunStandaloneExample("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);;
+  // example.RunExample("idto/examples/block2d/block2d.yaml", FLAGS_test);
+  // example.RunStandaloneExample("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);
+  example.RunWithExperimentFlags("idto/examples/block2d/block2d.yaml", 17, FLAGS_test);
 
   return 0;
 }

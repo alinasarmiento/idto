@@ -123,7 +123,7 @@ void ModelPredictiveController::StoreOptimizerSolution(
       u_knots[i] = B_.transpose() * solution.tau[i - 1];
     } else {
       u_knots[i] = B_.transpose() * solution.tau[i];
-      std::cout << "u at " << i << ": " << u_knots[i] << std::endl;
+      // std::cout << "u at " << i << ": " << u_knots[i] << std::endl;
     }
   }
 

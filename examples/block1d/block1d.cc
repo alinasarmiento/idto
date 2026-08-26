@@ -11,6 +11,8 @@ DEFINE_bool(test, false,
             "simpler problem");
 DEFINE_double(ee_x_init, 0.0,
               "initial offset applied to the ee_x prismatic joint position");
+DEFINE_double(smoothing, 0.001,
+              "smoothing factor for contact formulation");
 
 namespace idto {
 namespace examples {
@@ -48,9 +50,13 @@ class Block1dExample : public TrajOptExample {
             FindIdtoResource(options_file), {}, default_options);
 
     const double ee_x_offset = FLAGS_ee_x_init;
-    if (options.q_init.size() > 0) options.q_init[0] += ee_x_offset;
-    if (options.q_nom_start.size() > 0) options.q_nom_start[0] += ee_x_offset;
-    if (options.q_guess.size() > 0) options.q_guess[0] += ee_x_offset;
+    if (options.q_init.size() > 0) options.q_init[0] = ee_x_offset;
+    if (options.q_nom_start.size() > 0) options.q_nom_start[0] = ee_x_offset;
+    if (options.q_nom_end.size() > 0) options.q_nom_end[0] = ee_x_offset;
+    if (options.q_guess.size() > 0) options.q_guess[0] = ee_x_offset;
+
+    const double smoothing_factor = FLAGS_smoothing;
+    options.smoothing_factor = smoothing_factor;
 
     if (test) {
       options.mpc = false;
@@ -82,7 +88,8 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, false);
 
     // Add a manipuland with sphere contact
-    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
+    std::cout << "loading lcs sdf" << std::endl;
+    std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d_lcs.sdf");
     // std::string manipuland_file =
     //     FindIdtoResource("idto/models/box_15cm_manual_contacts.sdf");
     std::vector<ModelInstanceIndex> block_model = Parser(plant).AddModels(manipuland_file);
@@ -128,7 +135,7 @@ class Block1dExample : public TrajOptExample {
     plant->set_gravity_enabled(ee_model, true);
 
     // Add a manipuland with compliant hydroelastic contact
-    // std::string manipuland_file = FindIdtoResource("idto/models/blocks/block_lcs.sdf");
+    std::cout << "loading sim sdf" << std::endl;
     std::string manipuland_file = FindIdtoResource("idto/models/blocks/block1d.sdf");
     // std::string manipuland_file =
     //     FindIdtoResource("idto/models/box_15cm.sdf");
@@ -167,8 +174,8 @@ int main(int argc, char* argv[]) {
 
   idto::examples::block1d::Block1dExample example;
 
-  example.RunWithJointXOffset("idto/examples/block1d/block1d.yaml", 15,
-                             FLAGS_test);
+  // example.RunExample("idto/examples/block1d/block1d.yaml", FLAGS_test);
+  example.RunWithJointXOffset("idto/examples/block1d/block1d.yaml", 15, FLAGS_test);
 
   return 0;
 }
