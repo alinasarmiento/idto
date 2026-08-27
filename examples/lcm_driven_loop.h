@@ -198,7 +198,7 @@ class LcmDrivenLoop {
     ///  }
     drake::log()->info(diagram_name_ + " started");
     while (time < end_time) {
-      std::cout << "loop sim time: " << time << std::endl;
+      // std::cout << "loop sim time: " << time << std::endl;
       // Wait for new InputMessageType messages and SwitchMessageType messages.
       bool is_new_input_message = false;
       bool is_new_switch_message = false;
