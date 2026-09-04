@@ -91,6 +91,13 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(q_from_v_nom)); // boolean; build q_nom based on v_nom
     a->Visit(DRAKE_NVP(qv_qidx));
     a->Visit(DRAKE_NVP(qv_vidx));
+
+    a->Visit(DRAKE_NVP(q_lower_bound));
+    a->Visit(DRAKE_NVP(q_upper_bound));
+    a->Visit(DRAKE_NVP(barrier_weight));
+    a->Visit(DRAKE_NVP(barrier_indices));
+    a->Visit(DRAKE_NVP(barrier_width));
+
   }
   // Initial state
   VectorXd q_init;
@@ -237,6 +244,12 @@ struct TrajOptExampleParams {
   bool q_from_v_nom{false};
   VectorX<bool> qv_qidx;
   VectorX<bool> qv_vidx;
+
+  VectorXd q_lower_bound;
+  VectorXd q_upper_bound;
+  double barrier_weight;
+  std::vector<int> barrier_indices;
+  double barrier_width;
   
 };
 

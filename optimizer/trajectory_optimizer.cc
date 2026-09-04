@@ -38,6 +38,7 @@ using drake::multibody::SpatialVelocity;
 using drake::systems::System;
 using internal::PentaDiagonalFactorization;
 using internal::PentaDiagonalFactorizationStatus;
+using std::log;
 
 template <typename T>
 TrajectoryOptimizer<T>::TrajectoryOptimizer(const Diagram<T>* diagram,
@@ -162,6 +163,41 @@ T TrajectoryOptimizer<T>::CalcCost(
     cost += T(tau[t].transpose() * prob_.R * tau[t]);
   }
 
+  // Log-barrier for state constraints + quadratic relaxation
+  if (prob_.barrier_weight > 0){
+    const T barrier_eta = prob_.barrier_width;
+    for (int t=0; t<num_steps(); ++t){
+
+      for (int idx : prob_.barrier_indices) {
+	const T lower_slack = q[t](idx) - prob_.q_lower_bound(idx);
+	const T upper_slack = prob_.q_upper_bound(idx) - q[t](idx);
+
+	// throw std::runtime_error("Log-barrier state is not strictly inside the bounds.");
+	// Lower bound barrier.
+	if (lower_slack <= barrier_eta) {
+	  const T violation = barrier_eta - lower_slack;
+	  cost += -prob_.barrier_weight * (log(barrier_eta)
+					   - (violation / barrier_eta)
+					   - ( (violation * violation) / (2.0 * barrier_eta * barrier_eta) ));
+	  std::cout << "t: " << t << " / q[t]: " << q[t](idx) << std::endl;
+	} else {
+	  cost += -prob_.barrier_weight * (log(lower_slack));
+	}
+	  
+	// Upper bound barrier.
+	if (upper_slack <= barrier_eta) {
+	  const T violation = barrier_eta - upper_slack;
+	  cost += -prob_.barrier_weight * (log(barrier_eta)
+					   - (violation / barrier_eta)
+					   - ( (violation * violation) / (2.0 * barrier_eta * barrier_eta) ));
+	  std::cout << "t: " << t << " / q[t]: " << q[t](idx) << std::endl;
+	} else {
+	  cost += -prob_.barrier_weight * (log(upper_slack));
+	}
+      }
+    }
+  }
+  
   // Scale running cost by dt (so the optimization problem we're solving doesn't
   // change so dramatically when we change the time step).
   cost *= time_step();
@@ -1092,6 +1128,36 @@ void TrajectoryOptimizer<T>::CalcGradient(
       // There is no constrol input at the final timestep
       gt += tau[t + 1].transpose() * 2 * prob_.R * dt * dtau_dqm[t + 1];
     }
+
+    // Contribution from log barrier (greysar)
+    if (prob_.barrier_weight > 0){
+      for (int idx : prob_.barrier_indices) {
+	const T lower_slack = q[t](idx) - prob_.q_lower_bound(idx);
+	const T upper_slack = prob_.q_upper_bound(idx) - q[t](idx);
+	const T bd = prob_.barrier_width;
+
+	// Lower bound barrier.
+	if (lower_slack <= bd) {
+	  const T violation = bd - lower_slack;
+	  gt(idx) += prob_.barrier_weight * dt *
+	    (-1.0 / bd - violation / (bd * bd));
+	} else {
+	  gt(idx) += prob_.barrier_weight * dt *
+	    (-1.0 / lower_slack);
+	}
+
+	// Upper bound barrier.
+	if (upper_slack <= bd) {
+	  const T violation = bd - upper_slack;
+	  gt(idx) += prob_.barrier_weight * dt *
+	    (1.0 / bd + violation / (bd * bd));
+	} else {
+	  gt(idx) += prob_.barrier_weight * dt *
+	    (1.0 / upper_slack);
+	}
+      }
+    }
+
   }
 
   // Last step is different, because there is terminal cost and v[t+1] doesn't
@@ -1176,6 +1242,26 @@ void TrajectoryOptimizer<T>::CalcHessian(
       MatrixX<T>& dgt_dqpp = A[t + 2];
       dgt_dqpp = dtau_dqp[t + 1].transpose() * R * dtau_dqm[t + 1];
     }
+
+    // contribution from log barrier
+    if (prob_.barrier_weight > 0){
+      for (int idx : prob_.barrier_indices) {
+	const T lower_slack = state.q()[t](idx) - prob_.q_lower_bound(idx);
+	const T upper_slack = prob_.q_upper_bound(idx) - state.q()[t](idx);
+	const T bd = prob_.barrier_width;
+
+	if (! (lower_slack > bd && upper_slack > bd)){
+	  C[t](idx, idx) += prob_.barrier_weight * dt *
+	    (1 / (bd*bd));
+	}
+	else{
+	  C[t](idx, idx) += prob_.barrier_weight * dt *
+	    (1.0 / (lower_slack * lower_slack) +
+	     1.0 / (upper_slack * upper_slack));
+	}
+      }
+    }
+    
   }
 
   // dg_t/dq_t for the final timestep
@@ -2225,7 +2311,7 @@ bool TrajectoryOptimizer<double>::CalcDoglegPoint(
   }
   return true;  // the trust region constraint is active
 }
-
+  
 template <typename T>
 SolverFlag TrajectoryOptimizer<T>::Solve(const std::vector<VectorX<T>>&,
                                          TrajectoryOptimizerSolution<T>*,

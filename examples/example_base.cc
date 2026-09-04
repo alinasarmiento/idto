@@ -561,6 +561,13 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   opt_prob->Qf_v = options.Qfv.asDiagonal();
   opt_prob->R = options.R.asDiagonal();
 
+  // Log barrier option
+  opt_prob->q_lower_bound = options.q_lower_bound;
+  opt_prob->q_upper_bound = options.q_upper_bound;
+  opt_prob->barrier_weight = options.barrier_weight;
+  opt_prob->barrier_indices = options.barrier_indices;
+  opt_prob->barrier_width = options.barrier_width;
+
   // Check which DoFs the cost is updated relative to the initial condition for
   VectorX<bool> q_nom_relative = options.q_nom_relative_to_q_init;
   if (q_nom_relative.size() == 0) {

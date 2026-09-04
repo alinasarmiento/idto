@@ -54,8 +54,16 @@ struct ProblemDefinition {
   // Target generalized positions at each time step
   std::vector<VectorXd> q_nom;
 
-  // Target generalized velocities at each time step
+  // Target generalized velocities at each time step (greysar)
   std::vector<VectorXd> v_nom;
+
+  // State constraints (optional, empty is no constraints) (greysar)
+  // implements barrier method
+  VectorXd q_lower_bound;
+  VectorXd q_upper_bound;
+  double barrier_weight;
+  std::vector<int> barrier_indices;
+  double barrier_width;
 };
 
 }  // namespace optimizer

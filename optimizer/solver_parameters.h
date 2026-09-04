@@ -10,6 +10,7 @@ namespace optimizer {
 
 using drake::MatrixX;
 using drake::VectorX;
+using Eigen::VectorXd;
 
 enum LinesearchMethod {
   // Simple backtracking linesearch with Armijo's condition
@@ -176,6 +177,13 @@ struct SolverParameters {
   bool q_from_v_nom;
   VectorX<bool> qv_qidx;
   VectorX<bool> qv_vidx;
+
+  // Log barrier method (greysar)
+  VectorXd q_lower_bound;
+  VectorXd q_upper_bound;
+  double barrier_weight{0.0};
+  std::vector<int> barrier_indices{};
+  double barrier_width{0.0};
   
 };
 
